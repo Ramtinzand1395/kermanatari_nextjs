@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         description,
         shortDesc,
         // categoryId,
-         categoryId: categoryId ?? undefined,
+         categoryId: categoryId!,
         mainImage,
         sku: generateSKU(),
         images: {

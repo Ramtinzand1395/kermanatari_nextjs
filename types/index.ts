@@ -7,7 +7,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   discountPrice: number | null;
-  sku: string;
+  sku?: string;
 }
 
 export interface CartStoreStateType {
