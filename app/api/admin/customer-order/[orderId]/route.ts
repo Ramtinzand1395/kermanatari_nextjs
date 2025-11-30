@@ -56,106 +56,36 @@
 // }
 // todo
 // !کلا اشتباه
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { OrderItem } from "@/types";
-import { Product } from "@prisma/client";
 
-interface CreateOrderBody {
-  userId: number;
-  addressId: number;
-  items: OrderItem[]; // [{ productId: number, quantity: number }]
-  shippingCost?: number;
-  description?: string;
-  paymentMethod?: "online" | "offline";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+interface Params {
+  params: { orderId: string };
 }
 
-export async function POST(req: Request) {
+export async function DELETE(req: NextRequest, ctx: Params) {
   try {
-    const body: CreateOrderBody = await req.json();
+    const { orderId } = ctx.params;
 
-    const {
-      userId,
-      addressId,
-      items,
-      shippingCost = 0,
-      description = "",
-      paymentMethod = "online",
-    } = body;
-
-    // ────────────────────────────────
-    // 1) اعتبارسنجی
-    // ────────────────────────────────
-    if (!userId || !addressId || !items || items.length === 0) {
+    if (!orderId) {
       return NextResponse.json(
-        { error: "اطلاعات سفارش ناقص است" },
+        { message: "OrderId یافت نشد" },
         { status: 400 }
       );
     }
 
-    // ────────────────────────────────
-    // 2) دریافت اطلاعات محصولات
-    // ────────────────────────────────
-    const productIds = items.map((i) => i.productId);
-
-    const products: Product[] = await prisma.product.findMany({
-      where: { id: { in: productIds } },
+    const deleted = await prisma.customerOrder.delete({
+      where: { id: Number(orderId) },
     });
 
-    if (products.length !== items.length) {
-      return NextResponse.json(
-        { error: "برخی از محصولات یافت نشد" },
-        { status: 404 }
-      );
-    }
-
-    // ────────────────────────────────
-    // 3) محاسبه قیمت کل آیتم‌ها
-    // ────────────────────────────────
-    let totalPrice = 0;
-
-    const orderItemsData = items.map((item: OrderItem) => {
-      const product = products.find((p: Product) => p.id === item.productId)!;
-
-      const itemTotal = product.price * item.quantity;
-      totalPrice += itemTotal;
-
-      return {
-        product: { connect: { id: product.id } },
-        quantity: item.quantity,
-        price: product.price,
-        total: itemTotal,
-      };
-    });
-
-    const finalPrice = totalPrice + shippingCost;
-
-    // ────────────────────────────────
-    // 4) ایجاد سفارش
-    // ────────────────────────────────
-    const order = await prisma.order.create({
-      data: {
-        user: { connect: { id: userId } },
-        address: { connect: { id: addressId } },
-        totalPrice,
-        shippingCost,
-        finalPrice,
-        description,
-        paymentMethod,
-        status: "pending",
-        paymentStatus: "unpaid",
-        items: { create: orderItemsData },
-      },
-      include: {
-        items: { include: { product: true } },
-        address: true,
-        user: true,
-      },
-    });
-
-    return NextResponse.json(order, { status: 201 });
-  } catch (err) {
+    return NextResponse.json({ message: "سفارش حذف شد.", data: deleted });
+   } catch (err: unknown) {
     console.error(err);
-    return NextResponse.json({ error: "خطا سرور" }, { status: 500 });
+
+    const message =
+      err instanceof Error ? err.message : "server error";
+
+    return NextResponse.json({ message }, { status: 500 });
   }
 }
