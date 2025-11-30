@@ -1,7 +1,7 @@
 import { CartItem, CartStoreStateType } from "@/types";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-
+// hi
 interface CartStoreActionsType {
   addToCart: (
     product: Partial<CartItem> & {
