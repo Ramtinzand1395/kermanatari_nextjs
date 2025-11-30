@@ -1,6 +1,16 @@
 // app/api/gamelistitem/route.ts
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+interface GameListItem {
+  id: number;
+  name: string;
+}
+
+interface GameList {
+  platform: string;
+  id: number;
+  items: GameListItem[];
+}
 
 
 export async function GET(req: NextRequest) {
@@ -25,7 +35,7 @@ export async function GET(req: NextRequest) {
     }
 
     // همه آیتم‌ها را flat می‌کنیم
-    const allItems = gameLists.flatMap((list) =>
+    const allItems = gameLists.flatMap((list:GameList) =>
       list.items.map((item) => ({
         id: item.id,
         name: item.name,
