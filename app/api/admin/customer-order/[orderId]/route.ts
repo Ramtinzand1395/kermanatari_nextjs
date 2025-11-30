@@ -56,28 +56,37 @@
 // }
 // todo
 // !کلا اشتباه
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { OrderItem } from "@/types";
+import { Product } from "@prisma/client";
+
+interface CreateOrderBody {
+  userId: number;
+  addressId: number;
+  items: OrderItem[]; // [{ productId: number, quantity: number }]
+  shippingCost?: number;
+  description?: string;
+  paymentMethod?: "online" | "offline";
+}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body: CreateOrderBody = await req.json();
 
     const {
       userId,
       addressId,
-      items, // [{ productId: number, quantity: number }]
+      items,
       shippingCost = 0,
-      description,
+      description = "",
       paymentMethod = "online",
     } = body;
 
     // ────────────────────────────────
     // 1) اعتبارسنجی
     // ────────────────────────────────
-    if (!userId || !addressId || !items || !items.length) {
+    if (!userId || !addressId || !items || items.length === 0) {
       return NextResponse.json(
         { error: "اطلاعات سفارش ناقص است" },
         { status: 400 }
@@ -85,15 +94,14 @@ export async function POST(req: Request) {
     }
 
     // ────────────────────────────────
-    // 2) دریافت قیمت محصولات از دیتابیس
+    // 2) دریافت اطلاعات محصولات
     // ────────────────────────────────
-    const productIds = items.map((i: OrderItem) => i.productId);
+    const productIds = items.map((i) => i.productId);
 
-    const products = await prisma.product.findMany({
+    const products: Product[] = await prisma.product.findMany({
       where: { id: { in: productIds } },
     });
 
-    // بررسی وجود همه محصولات
     if (products.length !== items.length) {
       return NextResponse.json(
         { error: "برخی از محصولات یافت نشد" },
@@ -103,18 +111,17 @@ export async function POST(req: Request) {
 
     // ────────────────────────────────
     // 3) محاسبه قیمت کل آیتم‌ها
-    // totalPrice = sum(product.price * quantity)
     // ────────────────────────────────
     let totalPrice = 0;
 
     const orderItemsData = items.map((item: OrderItem) => {
-      const product = products.find((p) => p.id === item.productId)!;
+      const product = products.find((p: Product) => p.id === item.productId)!;
 
       const itemTotal = product.price * item.quantity;
       totalPrice += itemTotal;
 
       return {
-         product: { connect: { id: product.id } },
+        product: { connect: { id: product.id } },
         quantity: item.quantity,
         price: product.price,
         total: itemTotal,
@@ -128,10 +135,8 @@ export async function POST(req: Request) {
     // ────────────────────────────────
     const order = await prisma.order.create({
       data: {
-        // userId,
-        // addressId,
-        user: { connect: { id: userId } },          // اتصال به کاربر
-    address: { connect: { id: addressId } },
+        user: { connect: { id: userId } },
+        address: { connect: { id: addressId } },
         totalPrice,
         shippingCost,
         finalPrice,
@@ -139,23 +144,18 @@ export async function POST(req: Request) {
         paymentMethod,
         status: "pending",
         paymentStatus: "unpaid",
-
-        items: {
-          create: orderItemsData,
-        },
+        items: { create: orderItemsData },
       },
-
       include: {
-    items: { include: { product: true } },
+        items: { include: { product: true } },
         address: true,
         user: true,
       },
     });
 
     return NextResponse.json(order, { status: 201 });
-  }catch (err) {
+  } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "خطا سرور" }, { status: 500 });
   }
 }
-
