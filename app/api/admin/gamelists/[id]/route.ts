@@ -56,11 +56,8 @@
 
 // app/api/gamelistitem/[id]/route.ts
 
-// @ts-expect-error Fix Prisma import
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
-const prisma = new PrismaClient();
 
 export async function DELETE(
   req: NextRequest,
