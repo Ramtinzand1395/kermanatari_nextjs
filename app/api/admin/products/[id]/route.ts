@@ -182,6 +182,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+import { Specification } from "@prisma/client";
 
 interface SpecificationItemInput {
   key: string;
@@ -270,7 +271,7 @@ export async function PUT(
     const oldSpecs = await prisma.specification.findMany({ where: { productId } });
     if (oldSpecs.length > 0) {
       await prisma.specificationItem.deleteMany({
-        where: { specificationId: { in: oldSpecs.map((s) => s.id) } },
+        where: { specificationId: { in: oldSpecs.map((s:Specification) => s.id) } },
       });
       await prisma.specification.deleteMany({ where: { productId } });
     }
