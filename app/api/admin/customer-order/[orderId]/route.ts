@@ -59,6 +59,7 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { OrderItem } from "@/types";
 
 export async function POST(req: Request) {
   try {
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
     // ────────────────────────────────
     // 2) دریافت قیمت محصولات از دیتابیس
     // ────────────────────────────────
-    const productIds = items.map((i: any) => i.productId);
+    const productIds = items.map((i: OrderItem) => i.productId);
 
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
     // ────────────────────────────────
     let totalPrice = 0;
 
-    const orderItemsData = items.map((item: any) => {
+    const orderItemsData = items.map((item: OrderItem) => {
       const product = products.find((p) => p.id === item.productId)!;
 
       const itemTotal = product.price * item.quantity;
@@ -152,10 +153,9 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(order, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: "خطای سرور", detail: err.message },
-      { status: 500 }
-    );
+  }catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "خطا سرور" }, { status: 500 });
   }
 }
+
