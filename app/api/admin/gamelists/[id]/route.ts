@@ -55,6 +55,8 @@
 // }
 
 // app/api/gamelistitem/[id]/route.ts
+
+// @ts-expect-error Fix Prisma import
 import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
