@@ -54,66 +54,108 @@
 //     return NextResponse.json({ message: err.message || "server error" }, { status: 500 });
 //   }
 // }
+// todo
+// !کلا اشتباه
 
-
-// app/api/abtin/order/[orderId]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PUT(
-  req: NextRequest,
-  ctx: { params: { orderId: string } }
-) {
+export async function POST(req: Request) {
   try {
-    const { orderId } = ctx.params;
-
     const body = await req.json();
 
-    // جلوگیری از آپدیت id
-    delete body.id;
+    const {
+      userId,
+      addressId,
+      items, // [{ productId: number, quantity: number }]
+      shippingCost = 0,
+      description,
+      paymentMethod = "online",
+    } = body;
 
-    // جلوگیری از آپدیت customer object
-    delete body.customer;
-
-    // اگر لیست آرایه بود، آن را stringify کنید
-    if (Array.isArray(body.list)) {
-      body.list = JSON.stringify(body.list);
+    // ────────────────────────────────
+    // 1) اعتبارسنجی
+    // ────────────────────────────────
+    if (!userId || !addressId || !items || !items.length) {
+      return NextResponse.json(
+        { error: "اطلاعات سفارش ناقص است" },
+        { status: 400 }
+      );
     }
 
-    const updated = await prisma.customerOrder.update({
-      where: { id: Number(orderId) },
-      data: body,
+    // ────────────────────────────────
+    // 2) دریافت قیمت محصولات از دیتابیس
+    // ────────────────────────────────
+    const productIds = items.map((i: any) => i.productId);
+
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
     });
 
-    const populated = await prisma.customerOrder.findUnique({
-      where: { id: updated.id },
-      include: { customer: true },
-    });
-
-    return NextResponse.json({ message: "سفارش ویرایش شد.", Data: populated });
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ message: "server error" }, { status: 500 });
-  }
-}
-
-export async function DELETE(
-  req: NextRequest,
-  ctx: { params: { orderId: string } }
-) {
-  try {
-    const { orderId } = ctx.params;
-    if (!orderId) {
-      return NextResponse.json({ message: "OrderId یافت نشد" }, { status: 400 });
+    // بررسی وجود همه محصولات
+    if (products.length !== items.length) {
+      return NextResponse.json(
+        { error: "برخی از محصولات یافت نشد" },
+        { status: 404 }
+      );
     }
 
-    const deleted = await prisma.customerOrder.delete({
-      where: { id: Number(orderId) },
+    // ────────────────────────────────
+    // 3) محاسبه قیمت کل آیتم‌ها
+    // totalPrice = sum(product.price * quantity)
+    // ────────────────────────────────
+    let totalPrice = 0;
+
+    const orderItemsData = items.map((item: any) => {
+      const product = products.find((p) => p.id === item.productId)!;
+
+      const itemTotal = product.price * item.quantity;
+      totalPrice += itemTotal;
+
+      return {
+         product: { connect: { id: product.id } },
+        quantity: item.quantity,
+        price: product.price,
+        total: itemTotal,
+      };
     });
 
-    return NextResponse.json({ message: "سفارش حذف شد.", data: deleted });
+    const finalPrice = totalPrice + shippingCost;
+
+    // ────────────────────────────────
+    // 4) ایجاد سفارش
+    // ────────────────────────────────
+    const order = await prisma.order.create({
+      data: {
+        // userId,
+        // addressId,
+        user: { connect: { id: userId } },          // اتصال به کاربر
+    address: { connect: { id: addressId } },
+        totalPrice,
+        shippingCost,
+        finalPrice,
+        description,
+        paymentMethod,
+        status: "pending",
+        paymentStatus: "unpaid",
+
+        items: {
+          create: orderItemsData,
+        },
+      },
+
+      include: {
+    items: { include: { product: true } },
+        address: true,
+        user: true,
+      },
+    });
+
+    return NextResponse.json(order, { status: 201 });
   } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ message: err.message || "server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطای سرور", detail: err.message },
+      { status: 500 }
+    );
   }
 }
