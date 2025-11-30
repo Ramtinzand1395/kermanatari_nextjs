@@ -208,7 +208,7 @@ export async function GET() {
     include: { customer: true },
   });
 
-  const parsedOrders = orders.map((o) => ({
+  const parsedOrders = orders.map((o:CustomerOrderWithList) => ({
     ...o,
     list: JSON.parse(o.list),
     deliveryStatus: o.deliveryStatus || "دریافت از مشتری",
