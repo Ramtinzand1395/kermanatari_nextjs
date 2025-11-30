@@ -8,11 +8,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
+  // const { id } = params;
+  const gameId = Number(params.id);
+  if (isNaN(gameId)) {
+    return NextResponse.json({ error: "شناسه نامعتبر است" }, { status: 400 });
+  }
 
   try {
     await prisma.gameListItem.delete({
-      where: { id: Number(id) },
+      where: { id: gameId },
     });
     return NextResponse.json({ message: "Item deleted successfully" });
   } catch (err) {
@@ -28,12 +32,16 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
+  // const { id } = params;
+  const gameId = Number(params.id);
+  if (isNaN(gameId)) {
+    return NextResponse.json({ error: "شناسه نامعتبر است" }, { status: 400 });
+  }
   const body = await req.json();
 
   try {
     const updatedItem = await prisma.gameListItem.update({
-      where: { id: Number(id) },
+      where: { id: gameId },
       data: body, // مثلا { name: "new name" }
     });
     return NextResponse.json(updatedItem);
