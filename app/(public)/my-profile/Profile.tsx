@@ -169,7 +169,7 @@ export default function Profile() {
     }
 
     // ---------- تغییر سایر فیلدها ----------
-    const res = await updateProfileInfo(formData as UserProfileForm);
+const res = await updateProfileInfo(formData as unknown as UserProfileForm);
 
     if (res.success) {
       toast.success("اطلاعات با موفقیت ذخیره شد");
