@@ -9,12 +9,32 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/client": "^4.16.2",
+    "bcryptjs": "^3.0.3",
+    "framer-motion": "^12.23.24",
+    "google-auth-library": "^10.5.0",
+    "iran-regions": "^1.1.10",
+    "jspdf": "^3.0.4",
+    "lucide-react": "^0.554.0",
+    "moment-jalaali": "^0.10.4",
     "next": "16.0.3",
+    "next-auth": "^4.24.13",
+    "prisma": "^4.16.2",
+    "provinces-and-cities": "^1.0.7",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-date-object": "^2.1.9",
+    "react-dom": "19.2.0",
+    "react-loading-skeleton": "^3.5.0",
+    "react-multi-date-picker": "^4.5.2",
+    "react-toastify": "^11.0.5",
+    "recharts": "^3.4.1",
+    "swiper": "^12.0.3",
+    "yup": "^1.7.1",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/moment-jalaali": "^0.7.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,0 +1,254 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ====== MODELS ======
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  lastName     String
+  email        String        @unique
+  password     String
+  mobile       String        @unique
+  role         String        @default("user")
+  otps         OTP[]
+  newsletter   Boolean       @default(true)
+  gender       String?
+  birthday     String?
+  nationalCode String?
+  favorites    Favorite[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  Comment      Comment[]
+  products     Product[]
+  addresses    Address[]
+  orders       Order[]
+  tempPayments TempPayment[]
+}
+
+model OTP {
+  id        Int      @id @default(autoincrement())
+  codeHash  String
+  phone     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+}
+
+model Address {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  province   String
+  city       String
+  address    String
+  plaque     String?
+  unit       String?
+  postalCode String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  orders     Order[]
+}
+
+// ====== PRODUCTS ======
+
+model Product {
+  id             Int             @id @default(autoincrement())
+  sku            String          @unique @default("UNKNOWN")
+  title          String
+  slug           String          @unique
+  description    String
+  shortDesc      String?
+  price          Int
+  discountPrice  Int?
+  stock          Int             @default(0)
+  brand          String?
+  mainImage      String
+  images         ProductImage[]
+  specifications Specification[]
+  category       Category        @relation(fields: [categoryId], references: [id])
+  categoryId     Int
+  tags           Tag[]           @relation("ProductTags")
+  comments       Comment[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  User           User?           @relation(fields: [userId], references: [id])
+  userId         Int?
+  favorites      Favorite[]
+  OrderItem      OrderItem[]
+}
+
+model Specification {
+  id        Int                 @id @default(autoincrement())
+  title     String // تیتر مشخصات
+  product   Product?            @relation(fields: [productId], references: [id])
+  productId Int?
+  items     SpecificationItem[] // ← این جایگزین Json است
+}
+
+model SpecificationItem {
+  id              Int           @id @default(autoincrement())
+  key             String
+  value           String
+  specification   Specification @relation(fields: [specificationId], references: [id])
+  specificationId Int
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  rating    Float    @default(0)
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int
+  verified  Boolean  @default(false)
+  product   Product? @relation(fields: [productId], references: [id])
+  productId Int?
+  createdAt DateTime @default(now())
+}
+
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+}
+
+model Tag {
+  id       Int       @id @default(autoincrement())
+  name     String
+  slug     String    @unique
+  products Product[] @relation("ProductTags")
+}
+
+model Category {
+  id            Int        @id @default(autoincrement())
+  name          String
+  slug          String     @unique
+  parentId      Int?
+  parent        Category?  @relation("CategoryToParent", fields: [parentId], references: [id])
+  subcategories Category[] @relation("CategoryToParent")
+  products      Product[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  product   Product  @relation(fields: [productId], references: [id])
+  productId Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId]) // جلوگیری از ثبت دوباره یک محصول در علاقه‌مندی
+}
+
+// ====== ORDER ======
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  user          User?       @relation(fields: [userId], references: [id])
+  userId        Int?
+  // آدرس ارسال
+  address       Address?    @relation(fields: [addressId], references: [id])
+  addressId     Int?
+  // آیتم‌های سفارش (هر محصول با تعداد و قیمت جدا)
+  items         OrderItem[]
+  totalPrice    Int
+  shippingCost  Int         @default(0)
+  finalPrice    Int // totalPrice + shippingCost - discounts
+  // وضعیت‌ها
+  status        String      @default("pending")
+  paymentMethod String      @default("online")
+  paymentStatus String      @default("unpaid")
+  trackingCode  String?     @unique
+  invoiceNumber String?     @unique
+  description   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id      Int   @id @default(autoincrement())
+  order   Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  quantity Int
+  price    Int // قیمت محصول در زمان ثبت سفارش
+  total    Int // price * quantity
+}
+
+// ====== CUSTOMER ======
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String   @default("کاربر بی نام")
+  mobile      String   @unique
+  lastName    String
+  sex         String
+  birthday    String?
+  description String?
+  persianDate String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  CustomerOrder CustomerOrder[]
+
+  @@map("customers")
+}
+
+model CustomerOrder {
+  id             Int      @id @default(autoincrement())
+  list           String // آرایه به صورت JSON ذخیره می‌شود
+  price          Float
+  customer       Customer @relation(fields: [customerId], references: [id])
+  customerId     Int
+  description    String?
+  consoleType    String // VarChar حذف شد
+  deliveryStatus String?  @default("دریافت از مشتری")
+  persianDate    String?
+  deliveryDate   String   @default("تحویل داده نشده")
+  deliveryCode   String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("customer_orders")
+}
+
+model GameList {
+  id        Int            @id @default(autoincrement())
+  platform  String
+  items     GameListItem[] // رابطه 1 به چند
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model GameListItem {
+  id         Int      @id @default(autoincrement())
+  name       String
+  gameListId Int
+  gameList   GameList @relation(fields: [gameListId], references: [id])
+}
+
+// ====== PAYMENT ======
+
+model TempPayment {
+  id         Int      @id @default(autoincrement())
+  authority  String   @unique
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  items      String // JSON ذخیره شده به صورت متن
+  finalPrice Int
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
