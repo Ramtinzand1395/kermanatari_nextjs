@@ -60,19 +60,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-interface Params {
-  params: { orderId: string };
-}
-
-export async function DELETE(req: NextRequest, ctx: Params) {
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ orderId: string }> }
+) {
   try {
-    const { orderId } = ctx.params;
+    const { orderId } = await context.params;
 
     if (!orderId) {
-      return NextResponse.json(
-        { message: "OrderId یافت نشد" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "OrderId یافت نشد" }, { status: 400 });
     }
 
     const deleted = await prisma.customerOrder.delete({
@@ -80,12 +76,12 @@ export async function DELETE(req: NextRequest, ctx: Params) {
     });
 
     return NextResponse.json({ message: "سفارش حذف شد.", data: deleted });
-   } catch (err: unknown) {
+  } catch (err: unknown) {
     console.error(err);
 
-    const message =
-      err instanceof Error ? err.message : "server error";
+    const message = err instanceof Error ? err.message : "server error";
 
     return NextResponse.json({ message }, { status: 500 });
   }
 }
+
