@@ -10,7 +10,7 @@ interface SpecificationItemInput {
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const resolvedParams = await params;
   const productId = Number(resolvedParams.id);
@@ -123,7 +123,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   const resolvedParams = await params;
   const productId = Number(resolvedParams.id);
