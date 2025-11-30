@@ -276,7 +276,7 @@ export async function PUT(
     });
     if (oldSpecs.length > 0) {
       await prisma.specificationItem.deleteMany({
-        where: { specificationId: { in: oldSpecs.map((s) => s.id) } },
+        where: { specificationId: { in: oldSpecs.map((s: { id: number }) => s.id) } },
       });
       await prisma.specification.deleteMany({ where: { productId } });
     }
