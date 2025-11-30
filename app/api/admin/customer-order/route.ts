@@ -217,7 +217,7 @@ export async function GET() {
 
   const groupedOrders: Record<string, CustomerOrderWithList[]> = {};
 
-  parsedOrders.forEach((order) => {
+  parsedOrders.forEach((order:CustomerOrderWithList) => {
     const key = order.consoleType!; // safe because we set a default above
     if (!groupedOrders[key]) groupedOrders[key] = [];
     groupedOrders[key].push(order);
