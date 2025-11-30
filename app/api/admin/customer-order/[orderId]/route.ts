@@ -54,3 +54,19 @@
 //     return NextResponse.json({ message: err.message || "server error" }, { status: 500 });
 //   }
 // }
+
+// app/api/admin/customer-order/[orderId]/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(req: NextRequest, { params }: { params: { orderId: string } }) {
+  const { orderId } = params;
+  // منطق دریافت سفارش
+  return NextResponse.json({ orderId });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { orderId: string } }) {
+  const { orderId } = params;
+  const body = await req.json();
+  // منطق آپدیت سفارش
+  return NextResponse.json({ success: true, orderId, body });
+}
