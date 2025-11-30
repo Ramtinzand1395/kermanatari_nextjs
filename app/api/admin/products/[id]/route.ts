@@ -182,7 +182,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
-import { Specification } from "@prisma/client";
 
 interface SpecificationItemInput {
   key: string;
@@ -198,11 +197,15 @@ export async function PUT(
     const productId = Number(id);
 
     if (isNaN(productId)) {
-      return NextResponse.json({ error: "شناسه محصول نامعتبر است" }, { status: 400 });
+      return NextResponse.json(
+        { error: "شناسه محصول نامعتبر است" },
+        { status: 400 }
+      );
     }
 
     const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+    if (!session?.user)
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     if (session.user.role !== "superadmin")
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
@@ -268,10 +271,12 @@ export async function PUT(
     }
 
     // آپدیت مشخصات
-    const oldSpecs = await prisma.specification.findMany({ where: { productId } });
+    const oldSpecs = await prisma.specification.findMany({
+      where: { productId },
+    });
     if (oldSpecs.length > 0) {
       await prisma.specificationItem.deleteMany({
-        where: { specificationId: { in: oldSpecs.map((s:Specification) => s.id) } },
+        where: { specificationId: { in: oldSpecs.map((s) => s.id) } },
       });
       await prisma.specification.deleteMany({ where: { productId } });
     }
@@ -294,7 +299,10 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "خطا در بروزرسانی محصول" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطا در بروزرسانی محصول" },
+      { status: 500 }
+    );
   }
 }
 
@@ -307,11 +315,15 @@ export async function DELETE(
     const productId = Number(id);
 
     if (isNaN(productId)) {
-      return NextResponse.json({ error: "شناسه محصول نامعتبر است" }, { status: 400 });
+      return NextResponse.json(
+        { error: "شناسه محصول نامعتبر است" },
+        { status: 400 }
+      );
     }
 
     const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
+    if (!session?.user)
+      return NextResponse.json({ error: "کاربر وارد نشده" }, { status: 401 });
     if (session.user.role !== "superadmin")
       return NextResponse.json({ error: "دسترسی غیرمجاز" }, { status: 403 });
 
@@ -331,7 +343,10 @@ export async function DELETE(
     }
 
     // قطع ارتباط تگ‌ها
-    await prisma.product.update({ where: { id: productId }, data: { tags: { set: [] } } });
+    await prisma.product.update({
+      where: { id: productId },
+      data: { tags: { set: [] } },
+    });
 
     // حذف خود محصول
     await prisma.product.delete({ where: { id: productId } });
